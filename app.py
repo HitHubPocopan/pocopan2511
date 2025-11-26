@@ -643,6 +643,20 @@ def buscar_productos():
     
     return jsonify([p.nombre for p in productos])
 
+@app.route('/detalles-producto/<path:producto_nombre>')
+@login_required
+def detalles_producto(producto_nombre):
+    try:
+        producto = Producto.query.filter(
+            db.func.lower(Producto.nombre) == unquote(producto_nombre).lower()
+        ).first()
+        if not producto:
+            return jsonify({'success': False, 'message': 'Producto no encontrado'}), 404
+        return jsonify({'success': True, 'producto': producto.to_dict()})
+    except Exception as e:
+        logger.error(f"Error en detalles-producto: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error interno'}), 500
+
 @app.route('/agregar-carrito', methods=['POST'])
 @login_required
 def agregar_carrito():
