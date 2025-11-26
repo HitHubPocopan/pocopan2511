@@ -453,7 +453,7 @@ def editor_catalogo():
                          terminal_actual=session.get('terminal'))
 
 @app.route('/obtener-producto/<path:producto_nombre>')
-@admin_required
+@login_required
 def obtener_producto(producto_nombre):
     try:
         producto_decodificado = unquote(producto_nombre)
