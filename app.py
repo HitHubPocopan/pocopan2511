@@ -287,7 +287,11 @@ def _extract_cliente_sequence(value):
 def _max_cliente_sequence(rows):
     max_seq = 0
     for item in rows:
-        value = item[0] if isinstance(item, (list, tuple)) else item
+        value = item
+        if isinstance(item, (list, tuple)):
+            value = item[0]
+        elif hasattr(item, '_mapping'):
+            value = next(iter(item._mapping.values()), None)
         max_seq = max(max_seq, _extract_cliente_sequence(value))
     return max_seq
 
