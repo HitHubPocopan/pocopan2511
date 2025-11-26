@@ -365,6 +365,19 @@ def punto_venta():
     terminal = session.get('terminal')
     
     carrito_actual = get_carrito()
+    subtotal = sum(
+        (item.get('subtotal') if isinstance(item, dict) else 0)
+        or (item.get('precio', 0) * item.get('cantidad', 0))
+        for item in carrito_actual
+    )
+    iva = subtotal * (CONFIG['iva'] / 100)
+    total = subtotal + iva
+    totales = {
+        'subtotal': round(subtotal, 2),
+        'iva': round(iva, 2),
+        'total': round(total, 2),
+        'porcentaje_iva': CONFIG['iva']
+    }
     
     contador = Contador.query.filter_by(terminal=terminal).first()
     id_cliente_proximo = (contador.ultimo_cliente + 1) if contador else 1
@@ -377,6 +390,7 @@ def punto_venta():
                          usuario_actual=usuario,
                          rol_actual=rol,
                          terminal_actual=terminal,
+                         totales=totales,
                          id_cliente_actual=f"CLIENTE-{terminal}-{id_cliente_proximo:04d}")
 
 @app.route('/dashboard')
