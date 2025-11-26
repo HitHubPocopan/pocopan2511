@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}Editor de Catálogo - POCOPAN{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h1 style="color: var(--naranja-primario); margin-bottom: 0.5rem;">Editor de Catálogo</h1>
+            <p style="color: var(--texto-gris);">Gestión completa de productos - Cambios se reflejan en todos los POS</p>
+        </div>
+        <div>
+            <button onclick="mostrarModalAgregar()" class="btn btn-primary">
+                ➕ Agregar Producto
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 style="color: var(--naranja-primario); font-size: 2rem; margin: 0;">{{ productos|length }}</h3>
+                <p style="color: var(--texto-gris); margin: 0;">Productos Totales</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 style="color: #28a745; font-size: 2rem; margin: 0;">
+                    {{ (productos|selectattr('estado', 'equalto', 'Disponible')|list)|length }}
+                </h3>
+                <p style="color: var(--texto-gris); margin: 0;">Productos Disponibles</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 style="color: #17a2b8; font-size: 2rem; margin: 0;">
+                    {% set categorias = [] %}
+                    {% for producto in productos %}
+                        {% if producto.categoria not in categorias %}
+                            {% set _ = categorias.append(producto.categoria) %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ categorias|length }}
+                </h3>
+                <p style="color: var(--texto-gris); margin: 0;">Categorías</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: end;">
+                <div>
+                    <label class="form-label">Buscar Producto</label>
+                    <input type="text" id="buscarProducto" class="form-control" placeholder="Nombre del producto..." 
+                           onkeyup="filtrarProductos()">
+                </div>
+                <div>
+                    <label class="form-label">Categoría</label>
+                    <select id="filtroCategoria" class="form-control" onchange="filtrarProductos()">
+                        <option value="all">Todas las categorías</option>
+                        {% set categorias_unicas = [] %}
+                        {% for producto in productos %}
+                            {% if producto.categoria and producto.categoria not in categorias_unicas %}
+                                {% set _ = categorias_unicas.append(producto.categoria) %}
+                                <option value="{{ producto.categoria }}">{{ producto.categoria }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <button onclick="limpiarFiltros()" class="btn btn-outline">Limpiar Filtros</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Lista de Productos</span>
+                <span class="user-terminal" id="contador-productos">{{ productos|length }} productos</span>
+            </div>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="catalogo-scroll" style="max-height: 60vh; overflow-y: auto; padding: 1rem;">
+                <div id="lista-productos">
+                    {% for producto in productos %}
+                    <div class="producto-item" 
+                         data-categoria="{{ producto.categoria }}"
+                         data-nombre="{{ producto.nombre|lower }}"
+                         style="border: 1px solid var(--naranja-borde); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: white;">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <h3 style="color: var(--naranja-primario); margin: 0 0 0.5rem 0; font-size: 1.1rem;">
+                                    {{ producto.nombre }}
+                                </h3>
+                                <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: var(--texto-gris); margin-bottom: 0.5rem;">
+                                    <span><strong>Categoría:</strong> {{ producto.categoria }}</span>
+                                    {% if producto.subcategoria and producto.subcategoria != '' %}
+                                    <span><strong>Subcategoría:</strong> {{ producto.subcategoria }}</span>
+                                    {% endif %}
+                                    <span><strong>Proveedor:</strong> {{ producto.proveedor }}</span>
+                                </div>
+                                <div style="font-size: 1.1rem; font-weight: bold; color: #28a745;">
+                                    ${{ "%.2f"|format(producto.precio_venta) }}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+                                <button onclick="editarProducto('{{ producto.nombre }}')" class="btn btn-primary" style="padding: 8px 16px;">
+                                    ✏️ Editar
+                                </button>
+                                <button onclick="eliminarProducto('{{ producto.nombre }}')" class="btn btn-danger" style="padding: 8px 16px;">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-editar" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="card" style="width: 90%; max-width: 600px; margin: 2rem;">
+        <div class="card-header">
+            ✏️ Editar Producto
+        </div>
+        <div class="card-body">
+            <div id="form-editar">
+                </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-agregar" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="card" style="width: 90%; max-width: 600px; margin: 2rem;">
+        <div class="card-header">
+            ➕ Agregar Nuevo Producto
+        </div>
+        <div class="card-body">
+            <form id="form-agregar">
+                <div class="form-group">
+                    <label class="form-label">Nombre del Producto *</label>
+                    <input type="text" id="nuevo-nombre" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Categoría</label>
+                    <input type="text" id="nueva-categoria" class="form-control" placeholder="Ej: Ingenio, Juego Meza, etc.">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subcategoría</label>
+                    <input type="text" id="nueva-subcategoria" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Precio de Venta *</label>
+                    <input type="number" id="nuevo-precio" class="form-control" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Proveedor</label>
+                    <input type="text" id="nuevo-proveedor" class="form-control">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" onclick="cerrarModalAgregar()" class="btn btn-outline">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // --- LÓGICA DE FILTRADO ---
+    function filtrarProductos() {
+        const query = document.getElementById('buscarProducto').value.toLowerCase();
+        const categoria = document.getElementById('filtroCategoria').value;
+        const productos = document.querySelectorAll('.producto-item');
+        let visibleCount = 0;
+        
+        productos.forEach(producto => {
+            const nombre = producto.getAttribute('data-nombre');
+            const catProducto = producto.getAttribute('data-categoria');
+            const coincideNombre = nombre.includes(query);
+            const coincideCategoria = categoria === 'all' || catProducto === categoria;
+            
+            if (coincideNombre && coincideCategoria) {
+                producto.style.display = 'block';
+                visibleCount++;
+            } else {
+                producto.style.display = 'none';
+            }
+        });
+        document.getElementById('contador-productos').textContent = visibleCount + ' productos';
+    }
+
+    function limpiarFiltros() {
+        document.getElementById('buscarProducto').value = '';
+        document.getElementById('filtroCategoria').value = 'all';
+        filtrarProductos();
+    }
+
+    // --- LÓGICA DE EDICIÓN ---
+    function editarProducto(nombreProducto) {
+        showNotification('Cargando producto...', 'info');
+        
+        // encodeURIComponent es crucial para nombres con espacios o símbolos
+        fetch('/obtener-producto/' + encodeURIComponent(nombreProducto), {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || data.error || 'Error en la respuesta');
+                    }).catch(e => {
+                        throw new Error('Error HTTP ' + response.status);
+                    });
+                }
+                return response.json();
+            })
+            .then(producto => {
+                if (producto.error) {
+                    showNotification('Error: ' + producto.error, 'error');
+                    return;
+                }
+                if (producto.success === false) {
+                    showNotification('Error: ' + (producto.message || 'Error desconocido'), 'error');
+                    return;
+                }
+                mostrarModalEditar(producto);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error al cargar producto: ' + error.message, 'error');
+            });
+    }
+
+    function mostrarModalEditar(producto) {
+        const formulario = document.getElementById('form-editar');
+        formulario.innerHTML = `
+            <form onsubmit="guardarCambios(event)">
+                <input type="hidden" id="producto-original" value="${producto.Nombre}">
+                
+                <div class="form-group">
+                    <label class="form-label">Nombre del Producto *</label>
+                    <input type="text" id="edit-nombre" class="form-control" value="${producto.Nombre}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Categoría</label>
+                    <input type="text" id="edit-categoria" class="form-control" value="${producto.Categoria || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subcategoría</label>
+                    <input type="text" id="edit-subcategoria" class="form-control" value="${producto.SubCAT || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Precio de Venta *</label>
+                    <input type="number" id="edit-precio" class="form-control" value="${producto['Precio Venta']}" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Proveedor</label>
+                    <input type="text" id="edit-proveedor" class="form-control" value="${producto.Proveedor || ''}">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" onclick="document.getElementById('modal-editar').style.display='none'" class="btn btn-outline">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        `;
+        document.getElementById('modal-editar').style.display = 'flex';
+    }
+
+    function guardarCambios(event) {
+        event.preventDefault();
+        
+        const data = {
+            producto_original: document.getElementById('producto-original').value,
+            nombre: document.getElementById('edit-nombre').value,
+            categoria: document.getElementById('edit-categoria').value,
+            subcategoria: document.getElementById('edit-subcategoria').value,
+            precio_venta: parseFloat(document.getElementById('edit-precio').value),
+            proveedor: document.getElementById('edit-proveedor').value
+        };
+
+        if (!data.nombre || isNaN(data.precio_venta)) {
+            showNotification('Nombre y precio válidos son requeridos', 'error');
+            return;
+        }
+
+        showNotification('Actualizando...', 'info');
+
+        fetch('/actualizar-producto', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Error en la respuesta');
+                }).catch(() => {
+                    throw new Error('Error HTTP ' + response.status);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification('Producto actualizado correctamente', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Error desconocido', 'error');
+            }
+        })
+        .catch(error => showNotification('Error al guardar: ' + error.message, 'error'));
+    }
+
+    // --- LÓGICA DE AGREGAR ---
+    function mostrarModalAgregar() {
+        document.getElementById('modal-agregar').style.display = 'flex';
+    }
+
+    function cerrarModalAgregar() {
+        document.getElementById('modal-agregar').style.display = 'none';
+        document.getElementById('form-agregar').reset();
+    }
+
+    document.getElementById('form-agregar').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const data = {
+            nombre: document.getElementById('nuevo-nombre').value,
+            categoria: document.getElementById('nueva-categoria').value,
+            subcategoria: document.getElementById('nueva-subcategoria').value,
+            precio_venta: parseFloat(document.getElementById('nuevo-precio').value),
+            proveedor: document.getElementById('nuevo-proveedor').value
+        };
+
+        if (!data.nombre || isNaN(data.precio_venta)) {
+            showNotification('Nombre y precio válidos son requeridos', 'error');
+            return;
+        }
+
+        showNotification('Agregando...', 'info');
+
+        fetch('/agregar-producto', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Error en la respuesta');
+                }).catch(() => {
+                    throw new Error('Error HTTP ' + response.status);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification('Producto agregado correctamente', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Error desconocido', 'error');
+            }
+        })
+        .catch(error => showNotification('Error al agregar: ' + error.message, 'error'));
+    });
+
+    // --- LÓGICA DE ELIMINAR ---
+    function eliminarProducto(nombreProducto) {
+        if (!confirm(`¿Estás seguro de eliminar "${nombreProducto}"?`)) return;
+
+        showNotification('Eliminando...', 'info');
+
+        fetch('/eliminar-producto', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ producto_nombre: nombreProducto })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Error en la respuesta');
+                }).catch(() => {
+                    throw new Error('Error HTTP ' + response.status);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification('Producto eliminado correctamente', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Error desconocido', 'error');
+            }
+        })
+        .catch(error => showNotification('Error al eliminar: ' + error.message, 'error'));
+    }
+
+    // --- UTILIDAD: Notificaciones ---
+    // Si tienes una función showNotification en base.html, úsala. Si no, esta es una básica:
+    if (typeof showNotification === 'undefined') {
+        window.showNotification = function(msg, type) {
+            console.log('[' + type + '] ' + msg);
+            // Mostrar alert para errores y mensajes importantes
+            if (type === 'error' || type === 'success') {
+                alert('[' + type.toUpperCase() + '] ' + msg);
+            }
+        };
+    }
+
+    // Cerrar modales al hacer clic fuera
+    window.onclick = function(event) {
+        if (event.target.id == 'modal-editar') document.getElementById('modal-editar').style.display = "none";
+        if (event.target.id == 'modal-agregar') cerrarModalAgregar();
+    }
+</script>
+{% endblock %}

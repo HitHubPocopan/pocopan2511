@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - POCOPAN{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Header del Dashboard -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h1 style="color: var(--naranja-primario); margin-bottom: 0.3rem; font-size: 1.5rem;">Dashboard</h1>
+            <p style="color: var(--texto-gris); font-size: 0.9rem;">Estadísticas en tiempo real</p>
+        </div>
+        <div style="display: flex; gap: 0.8rem; align-items: center;">
+            <div class="user-badge">
+                <strong>Vista:</strong> {{ stats.dashboard_nombre }}
+            </div>
+            {% if rol_actual == 'admin' %}
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('dashboard_terminal', terminal_id='TODAS') }}" class="btn btn-sm btn-outline">Todas</a>
+                <a href="{{ url_for('dashboard_terminal', terminal_id='POS1') }}" class="btn btn-sm btn-outline">POS1</a>
+                <a href="{{ url_for('dashboard_terminal', terminal_id='POS2') }}" class="btn btn-sm btn-outline">POS2</a>
+                <a href="{{ url_for('dashboard_terminal', terminal_id='POS3') }}" class="btn btn-sm btn-outline">POS3</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estadísticas Principales -->
+    <div class="grid grid-4 mb-2">
+        <!-- Ventas Totales -->
+        <div class="card">
+            <div class="card-header" style="background: var(--naranja-primario); color: white; text-align: center; padding: 0.8rem;">
+                🏷️ Ventas Totales
+            </div>
+            <div class="card-body" style="text-align: center; padding: 1.2rem 0.5rem;">
+                <h2 style="font-size: 2rem; color: var(--naranja-primario); margin: 0 0 0.5rem 0; line-height: 1;">
+                    {{ stats.ventas_totales }}
+                </h2>
+                <p style="color: var(--texto-gris); margin: 0; font-size: 0.9rem;">Transacciones</p>
+                <div style="margin-top: 0.8rem; padding: 0.5rem; background: var(--naranja-fondo); border-radius: 6px;">
+                    <small style="color: var(--naranja-oscuro); font-size: 0.8rem; font-weight: 600;">
+                        Hoy: {{ stats.ventas_hoy_count }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingresos Totales -->
+        <div class="card">
+            <div class="card-header" style="background: #28a745; color: white; text-align: center; padding: 0.8rem;">
+                💰 Ingresos Totales
+            </div>
+            <div class="card-body" style="text-align: center; padding: 1.2rem 0.5rem;">
+                <h2 style="font-size: 1.5rem; color: #28a745; margin: 0 0 0.5rem 0; line-height: 1.2;">
+                    {{ stats.ingresos_totales }}
+                </h2>
+                <p style="color: var(--texto-gris); margin: 0; font-size: 0.9rem;">Acumulado</p>
+                <div style="margin-top: 0.8rem; padding: 0.5rem; background: #f0fff4; border-radius: 6px;">
+                    <small style="color: #28a745; font-size: 0.8rem; font-weight: 600;" id="ingresos-hoy">
+                        Hoy: ${{ "%.2f"|format(stats_avanzadas.ingresos_hoy) }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos -->
+        <div class="card">
+            <div class="card-header" style="background: #17a2b8; color: white; text-align: center; padding: 0.8rem;">
+                📦 Productos
+            </div>
+            <div class="card-body" style="text-align: center; padding: 1.2rem 0.5rem;">
+                <h2 style="font-size: 2rem; color: #17a2b8; margin: 0 0 0.5rem 0; line-height: 1;">
+                    {{ stats.productos_catalogo }}
+                </h2>
+                <p style="color: var(--texto-gris); margin: 0; font-size: 0.9rem;">En catálogo</p>
+                <div style="margin-top: 0.8rem; padding: 0.5rem; background: #f0fdff; border-radius: 6px;">
+                    <small style="color: #17a2b8; font-size: 0.8rem; font-weight: 600;">
+                        Vendidos hoy: {{ stats_avanzadas.productos_vendidos_hoy }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monto Histórico -->
+        <div class="card">
+            <div class="card-header" style="background: #6f42c1; color: white; text-align: center; padding: 0.8rem;">
+                📈 Monto Histórico
+            </div>
+            <div class="card-body" style="text-align: center; padding: 1.2rem 0.5rem;">
+                <h2 style="font-size: 1.5rem; color: #6f42c1; margin: 0 0 0.5rem 0; line-height: 1.2;">
+                    ${{ "%.2f"|format(stats_avanzadas.monto_historico) }}
+                </h2>
+                <p style="color: var(--texto-gris); margin: 0; font-size: 0.9rem;">Total histórico</p>
+                <div style="margin-top: 0.8rem; padding: 0.5rem; background: #f8f5ff; border-radius: 6px;">
+                    <small style="color: #6f42c1; font-size: 0.8rem; font-weight: 600;">
+                        Promedio: ${{ "%.2f"|format(stats_avanzadas.promedio_diario) }}/día
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Inferior - 2 Columnas -->
+    <div class="main-layout">
+        <!-- Columna Izquierda: Transacciones -->
+        <div class="card" style="height: 100%;">
+            <div class="card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>📋 Transacciones de Hoy</span>
+                    <span class="user-terminal">Total: {{ stats_avanzadas.transacciones_hoy_count }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Lista de Transacciones con Scroll Interno -->
+                <div class="scroll-area">
+                    <div id="lista-transacciones-hoy">
+                        {% if stats_avanzadas.transacciones_hoy %}
+                            {% for transaccion in stats_avanzadas.transacciones_hoy %}
+                            <div style="border: 1px solid var(--naranja-borde); border-radius: 6px; padding: 0.8rem; margin-bottom: 0.6rem; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+                                    <div style="flex: 1;">
+                                        <h4 style="color: var(--texto-oscuro); margin: 0 0 0.2rem 0; font-size: 0.9rem;">
+                                            {{ transaccion.Producto }}
+                                            {% if rol_actual == 'admin' %}
+                                            <span class="terminal-indicator">{{ transaccion.ID_Terminal }}</span>
+                                            {% endif %}
+                                        </h4>
+                                        <div style="display: flex; gap: 0.8rem; font-size: 0.75rem; color: var(--texto-gris);">
+                                            <span><strong>Cliente:</strong> {{ transaccion.ID_Cliente }}</span>
+                                            <span><strong>Hora:</strong> {{ transaccion.Hora }}</span>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right; min-width: 100px;">
+                                        <div style="font-size: 1rem; font-weight: bold; color: #28a745;">
+                                            ${{ "%.2f"|format(transaccion.Total_Venta) }}
+                                        </div>
+                                        <div style="font-size: 0.75rem; color: var(--texto-gris);">
+                                            Cant: {{ transaccion.Cantidad }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div style="text-align: center; padding: 1.5rem; color: var(--texto-gris);">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📝</div>
+                                <p>No hay transacciones hoy</p>
+                                <p style="font-size: 0.8rem;">Las ventas de hoy aparecerán aquí</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Productos Más Vendidos -->
+        <div class="card" style="height: 100%;">
+            <div class="card-header">
+                🏆 Productos Más Vendidos Hoy
+            </div>
+            <div class="card-body">
+                <!-- Lista de Productos con Scroll Interno -->
+                <div class="scroll-area">
+                    <div id="lista-productos-vendidos">
+                        {% if stats_avanzadas.productos_mas_vendidos %}
+                            <div style="display: grid; gap: 0.5rem;">
+                                {% for producto in stats_avanzadas.productos_mas_vendidos %}
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--naranja-fondo); border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                        <span style="font-size: 1.2rem;">
+                                            {% if loop.index == 1 %}🥇
+                                            {% elif loop.index == 2 %}🥈
+                                            {% elif loop.index == 3 %}🥉
+                                            {% else %}🏅{% endif %}
+                                        </span>
+                                        <div>
+                                            <div style="font-size: 0.9rem; font-weight: 500;">{{ producto.producto }}</div>
+                                            <div style="font-size: 0.75rem; color: var(--texto-gris);">
+                                                {{ producto.cantidad }} unidades
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 0.9rem; font-weight: bold; color: var(--naranja-primario);">
+                                            #{{ loop.index }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div style="text-align: center; padding: 1.5rem; color: var(--texto-gris);">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
+                                <p>No hay productos vendidos hoy</p>
+                                <p style="font-size: 0.8rem;">Los productos más vendidos aparecerán aquí</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actualizar Datos -->
+    <div class="card mb-2">
+        <div class="card-header" style="background: var(--naranja-primario); color: white;">
+            🚀 Actualizar Datos
+        </div>
+        <div class="card-body">
+            <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center;">
+                <button onclick="window.location.reload()" class="btn btn-primary">
+                    🔄 Actualizar Datos
+                </button>
+                <a href="{{ url_for('punto_venta') }}" class="btn btn-success">
+                    ➕ Nueva Venta
+                </a>
+                <span style="color: var(--texto-gris); font-size: 0.8rem;">
+                    Actualizado: {{ now.strftime('%H:%M') }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .terminal-indicator {
+        background: var(--naranja-fondo);
+        color: var(--naranja-oscuro);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

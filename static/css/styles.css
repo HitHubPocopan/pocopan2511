@@ -1,0 +1,578 @@
+/* Paleta de Colores POCOPAN Mejorada */
+:root {
+    --naranja-primario: #FF6B35;
+    --naranja-claro: #FF8C65;
+    --naranja-oscuro: #E55A2B;
+    --naranja-fondo: #FFF9F5;
+    --naranja-borde: #FFD7C9;
+    --naranja-hover: #FFE8E0;
+    --texto-oscuro: #2C3E50;
+    --texto-gris: #7F8C8D;
+    --texto-claro: #BDC3C7;
+    --blanco: #FFFFFF;
+    --gris-claro: #F8F9FA;
+    --gris-medio: #E9ECEF;
+    --gris-oscuro: #495057;
+    --sombra: rgba(255, 107, 53, 0.1);
+    --sombra-fuerte: rgba(0, 0, 0, 0.1);
+    --verde-success: #28a745;
+    --verde-hover: #218838;
+    --azul-info: #17a2b8;
+    --rojo-danger: #dc3545;
+}
+
+/* Estilos Globales */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--gris-claro) 0%, var(--naranja-fondo) 100%);
+    color: var(--texto-oscuro);
+    line-height: 1.6;
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-y: auto;
+}
+
+/* Header y Navegación */
+.header {
+    background: var(--blanco);
+    border-bottom: 2px solid var(--naranja-primario);
+    box-shadow: 0 1px 5px var(--sombra);
+    padding: 0.8rem 1.5rem;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.logo h1 {
+    color: var(--naranja-primario);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-badge {
+    background: var(--naranja-fondo);
+    padding: 6px 12px;
+    border-radius: 15px;
+    border: 1px solid var(--naranja-borde);
+    font-size: 0.8rem;
+}
+
+.user-terminal {
+    background: var(--naranja-primario);
+    color: var(--blanco);
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+/* Navegación */
+nav .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+nav .btn {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+
+/* Contenedor Principal */
+.container {
+    max-width: 1400px;
+    margin: 1.5rem auto;
+    padding: 0 1.5rem;
+}
+
+/* Layout principal con altura fija */
+.main-layout {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 1.5rem;
+    height: calc(100vh - 200px);
+    min-height: 600px;
+}
+
+/* Tarjetas Mejoradas */
+.card {
+    background: var(--blanco);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px var(--sombra-fuerte);
+    border: 1px solid var(--gris-medio);
+    overflow: hidden;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 8px 30px var(--sombra-fuerte);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--naranja-primario) 0%, var(--naranja-oscuro) 100%);
+    color: var(--blanco);
+    padding: 1rem 1.2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-body {
+    padding: 1.2rem;
+    height: calc(100% - 60px);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenedores con scroll interno */
+.scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+    margin-right: -8px;
+}
+
+.scroll-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+    background: var(--gris-medio);
+    border-radius: 4px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+    background: var(--naranja-primario);
+    border-radius: 4px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb:hover {
+    background: var(--naranja-oscuro);
+}
+
+/* Botones Mejorados */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 4px var(--sombra);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--sombra);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--naranja-primario) 0%, var(--naranja-oscuro) 100%);
+    color: var(--blanco);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--naranja-oscuro) 0%, var(--naranja-primario) 100%);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--verde-success) 0%, var(--verde-hover) 100%);
+    color: var(--blanco);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, var(--verde-hover) 0%, var(--verde-success) 100%);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--naranja-primario);
+    border: 2px solid var(--naranja-primario);
+}
+
+.btn-outline:hover {
+    background: var(--naranja-primario);
+    color: var(--blanco);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--rojo-danger) 0%, #c82333 100%);
+    color: var(--blanco);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, var(--rojo-danger) 100%);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1rem;
+}
+
+/* Formularios */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--texto-oscuro);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--naranja-borde);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    background: var(--blanco);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--naranja-primario);
+    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1);
+}
+
+/* Tablas */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--blanco);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px var(--sombra);
+    font-size: 0.85rem;
+}
+
+.table th {
+    background: var(--naranja-primario);
+    color: var(--blanco);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.table td {
+    padding: 0.8rem;
+    border-bottom: 1px solid var(--naranja-borde);
+}
+
+.table tr:hover {
+    background: var(--naranja-fondo);
+}
+
+/* Grid System */
+.grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.grid-4 {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* Estados y Utilidades */
+.text-primary {
+    color: var(--naranja-primario);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 0.8rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 0.8rem; }
+.mt-3 { margin-top: 1rem; }
+
+.hidden {
+    display: none;
+}
+
+/* Productos en POS Mejorados */
+.producto-item {
+    border: 1px solid var(--gris-medio);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--blanco);
+    font-size: 0.9rem;
+    box-shadow: 0 2px 4px var(--sombra);
+}
+
+.producto-item:hover {
+    border-color: var(--naranja-primario);
+    background: var(--naranja-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--sombra);
+}
+
+.producto-item.selected {
+    border-color: var(--verde-success);
+    background: rgba(40, 167, 69, 0.1);
+}
+
+/* Carrito Mejorado */
+.carrito-item {
+    border: 1px solid var(--gris-medio);
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 0.6rem;
+    background: var(--gris-claro);
+    font-size: 0.85rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.carrito-item:hover {
+    background: var(--blanco);
+    border-color: var(--naranja-primario);
+    box-shadow: 0 2px 8px var(--sombra);
+}
+
+/* Dashboard mejorado */
+.dashboard-stats {
+    font-size: 0.9rem;
+}
+
+.dashboard-stats h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
+}
+
+/* Scroll containers legacy - mantener compatibilidad */
+.scroll-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: var(--gris-medio);
+    border-radius: 3px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background: var(--naranja-primario);
+    border-radius: 3px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+    background: var(--naranja-oscuro);
+}
+
+/* Responsive Mejorado */
+@media (max-width: 1024px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 1rem;
+    }
+
+    .container {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 0.8rem;
+    }
+
+    .navbar {
+        flex-direction: column;
+        gap: 0.8rem;
+        text-align: center;
+    }
+
+    .user-info {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .user-badge, .user-terminal {
+        width: 100%;
+        text-align: center;
+    }
+
+    .main-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 1rem;
+    }
+
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .producto-item {
+        padding: 0.8rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+.scroll-container-fixed {
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--naranja-borde);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--blanco);
+}
+
+.scroll-container-medium {
+    max-height: 40vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--naranja-borde);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--blanco);
+}
+
+.scroll-container-small {
+    max-height: 30vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--naranja-borde);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--blanco);
+}
+
+/* Scroll personalizado */
+.scroll-container-fixed::-webkit-scrollbar,
+.scroll-container-medium::-webkit-scrollbar,
+.scroll-container-small::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scroll-container-fixed::-webkit-scrollbar-track,
+.scroll-container-medium::-webkit-scrollbar-track,
+.scroll-container-small::-webkit-scrollbar-track {
+    background: var(--gris-medio);
+    border-radius: 4px;
+}
+
+.scroll-container-fixed::-webkit-scrollbar-thumb,
+.scroll-container-medium::-webkit-scrollbar-thumb,
+.scroll-container-small::-webkit-scrollbar-thumb {
+    background: var(--naranja-primario);
+    border-radius: 4px;
+}
+
+.scroll-container-fixed::-webkit-scrollbar-thumb:hover,
+.scroll-container-medium::-webkit-scrollbar-thumb:hover,
+.scroll-container-small::-webkit-scrollbar-thumb:hover {
+    background: var(--naranja-oscuro);
+}
+
+/* Para el editor de catálogo específicamente */
+.catalogo-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Para el punto de venta */
+.pos-productos-scroll {
+    max-height: 65vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.pos-carrito-scroll {
+    max-height: 50vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}

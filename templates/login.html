@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POCOPAN - Sistema de Ventas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FFF9F5 0%, #FFE8DC 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.15);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid #FFD7C9;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #FF6B35;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #FFD7C9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #FF6B35;
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background: #E55A2B;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .error-message {
+            background: #FFE8E6;
+            border: 1px solid #FF6B35;
+            color: #D32F2F;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .user-credentials {
+            margin-top: 25px;
+            padding: 15px;
+            background: #FFF9F5;
+            border-radius: 8px;
+            border-left: 4px solid #FF6B35;
+        }
+
+        .user-credentials h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .credential-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #FFD7C9;
+        }
+
+        .credential-item:last-child {
+            border-bottom: none;
+        }
+
+        .credential-item strong {
+            color: #FF6B35;
+        }
+
+        .credential-item span {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>POCOPAN</h1>
+            <p>Sistema Multi-Terminal de Ventas</p>
+        </div>
+
+        {% if error %}
+        <div class="error-message">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="usuario">Usuario</label>
+                <select id="usuario" name="usuario" required>
+                    <option value="">Seleccionar usuario...</option>
+                    <option value="admin">Administrador</option>
+                    <option value="pos1">POS 1 - Terminal 1</option>
+                    <option value="pos2">POS 2 - Terminal 2</option>
+                    <option value="pos3">POS 3 - Terminal 3</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
+            </div>
+
+            <button type="submit" class="btn-login">Iniciar Sesión</button>
+        </form>
+
+        <div class="user-credentials">
+            <h3>Credenciales de Prueba:</h3>
+            <div class="credential-item">
+                <strong>Administrador:</strong> <span>admin / admin123</span>
+            </div>
+            <div class="credential-item">
+                <strong>POS 1:</strong> <span>pos1 / pos1123</span>
+            </div>
+            <div class="credential-item">
+                <strong>POS 2:</strong> <span>pos2 / pos2123</span>
+            </div>
+            <div class="credential-item">
+                <strong>POS 3:</strong> <span>pos3 / pos3123</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-seleccionar usuario al hacer clic en las credenciales
+        document.addEventListener('DOMContentLoaded', function() {
+            const credentials = {
+                'admin': 'admin123',
+                'pos1': 'pos1123', 
+                'pos2': 'pos2123',
+                'pos3': 'pos3123'
+            };
+
+            // Agregar evento a cada item de credencial
+            document.querySelectorAll('.credential-item').forEach(item => {
+                item.style.cursor = 'pointer';
+                item.addEventListener('click', function() {
+                    const user = this.querySelector('strong').textContent.toLowerCase().replace(':', '');
+                    if (user in credentials) {
+                        document.getElementById('usuario').value = user;
+                        document.getElementById('password').value = credentials[user];
+                        
+                        // Efecto visual de selección
+                        this.style.backgroundColor = '#FFE8DC';
+                        setTimeout(() => {
+                            this.style.backgroundColor = '';
+                        }, 500);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Error - POCOPAN{% endblock %}
+
+{% block content %}
+<div class="fade-in" style="text-align: center; padding: 3rem 1rem;">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <div class="card-header" style="background: #dc3545;">
+            ⚠️ Error del Sistema
+        </div>
+        <div class="card-body">
+            <div style="font-size: 4rem; color: #dc3545; margin-bottom: 1rem;">❌</div>
+            <h2 style="color: var(--texto-oscuro); margin-bottom: 1rem;">Ha ocurrido un error</h2>
+            <p style="color: var(--texto-gris); margin-bottom: 2rem; background: #fff5f5; padding: 1rem; border-radius: 8px; border-left: 4px solid #dc3545;">
+                {{ mensaje }}
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    🏠 Volver al Inicio
+                </a>
+                <a href="{{ url_for('diagnostico') }}" class="btn btn-outline">
+                    🔍 Diagnóstico
+                </a>
+                <button onclick="window.location.reload()" class="btn btn-outline">
+                    🔄 Recargar Página
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

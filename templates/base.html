@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POCOPAN - {% block title %}Sistema de Ventas{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="logo">
+                <h1>POCOPAN</h1>
+            </div>
+            
+            <div class="user-info">
+                <div class="user-badge">
+                    <strong>{{ session.usuario }}</strong>
+                </div>
+                <div class="user-terminal">
+                    Terminal: {{ session.terminal }}
+                </div>
+                {% if session.rol == 'admin' %}
+                <div class="user-terminal" style="background: #28a745;">
+                    Administrador
+                </div>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="btn btn-outline" style="padding: 8px 16px;">
+                    Cerrar Sesión
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Navegación -->
+    <nav style="background: white; border-bottom: 1px solid var(--naranja-borde); padding: 1rem 0;">
+        <div class="container">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="{{ url_for('punto_venta') }}" class="btn btn-outline">Punto de Venta</a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline">Dashboard</a>
+                {% if session.rol == 'admin' %}
+                <a href="{{ url_for('dashboard_terminal', terminal_id='TODAS') }}" class="btn btn-outline">Todas las Terminales</a>
+                <a href="{{ url_for('editor_catalogo') }}" class="btn btn-outline">Editor de Catálogo</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer style="background: white; border-top: 1px solid var(--naranja-borde); padding: 2rem 0; margin-top: 3rem;">
+        <div class="container text-center">
+            <p style="color: var(--texto-gris);">Sistema POCOPAN &copy; 2024 - Multi-Terminal de Ventas</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Funciones globales
+        function confirmAction(message) {
+            return confirm(message);
+        }
+
+        function showNotification(message, type = 'info') {
+            // Implementación simple de notificaciones
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                animation: fadeIn 0.5s ease;
+                max-width: 300px;
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = '#28a745';
+            } else if (type === 'error') {
+                notification.style.background = '#dc3545';
+            } else if (type === 'warning') {
+                notification.style.background = '#ffc107';
+                notification.style.color = '#333';
+            } else {
+                notification.style.background = 'var(--naranja-primario)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
