@@ -58,31 +58,33 @@ def init_db():
     """Inicializa la base con los datos de catálogo y ventas"""
     with app.app_context():
         db.create_all()
-        catalog_count = seed_catalog_from_excel()
-        ventas_stats = seed_sales_from_excel()
-        ensure_contadores(ventas_stats)
-        if catalog_count:
-            logger.info(f"✅ {catalog_count} productos cargados desde catalogo.xlsx")
-        if ventas_stats.get('TODAS', {}).get('total'):
-            logger.info(f"✅ {ventas_stats['TODAS']['total']} ventas cargadas desde ventas.xlsx")
+        catalog_result = seed_catalog_from_excel()
+        ventas_result = seed_sales_from_excel()
+        refresh_contadores()
+        if catalog_result['created'] or catalog_result['updated']:
+            logger.info(
+                f"✅ Catálogo: {catalog_result['created']} nuevos, {catalog_result['updated']} actualizados"
+            )
+        if ventas_result['created'] or ventas_result['updated']:
+            logger.info(
+                f"✅ Ventas: {ventas_result['created']} nuevas, {ventas_result['updated']} actualizadas"
+            )
 
 
 def seed_catalog_from_excel():
-    if Producto.query.first() is not None:
-        return 0
+    result = {'created': 0, 'updated': 0}
     if not os.path.exists(CATALOGO_XLSX):
         logger.warning("catalogo.xlsx no encontrado, omitiendo carga inicial")
-        return 0
+        return result
     try:
         import pandas as pd
     except ImportError as exc:
         logger.error(f"Pandas no disponible para cargar catálogo: {exc}")
-        return 0
+        return result
     df = pd.read_excel(CATALOGO_XLSX)
     if df.empty:
         logger.warning("catalogo.xlsx está vacío")
-        return 0
-    creados = 0
+        return result
     nombres_vistos = set()
     for _, row in df.iterrows():
         nombre = _clean_string(row.get('Nombre'))
@@ -90,42 +92,50 @@ def seed_catalog_from_excel():
             continue
         precio_col = 'Precio Venta' if 'Precio Venta' in row.index else 'Precio_Venta'
         precio = _safe_float(row.get(precio_col))
-        if not precio:
+        if precio is None:
             continue
         categoria = _clean_string(row.get('Categoria'), 'Sin Categoría')
         subcategoria = _clean_string(row.get('SubCAT'))
         proveedor = 'Catálogo'
-        producto = Producto(
-            nombre=nombre,
-            categoria=categoria or 'Sin Categoría',
-            subcategoria=subcategoria,
-            precio_venta=precio,
-            proveedor=proveedor,
-            estado='Disponible'
-        )
-        db.session.add(producto)
+        producto = Producto.query.filter(
+            db.func.lower(Producto.nombre) == nombre.lower()
+        ).first()
+        if producto:
+            producto.categoria = categoria or producto.categoria or 'Sin Categoría'
+            producto.subcategoria = subcategoria
+            producto.precio_venta = precio
+            producto.proveedor = proveedor
+            result['updated'] += 1
+        else:
+            producto = Producto(
+                nombre=nombre,
+                categoria=categoria or 'Sin Categoría',
+                subcategoria=subcategoria,
+                precio_venta=precio,
+                proveedor=proveedor,
+                estado='Disponible'
+            )
+            db.session.add(producto)
+            result['created'] += 1
         nombres_vistos.add(nombre)
-        creados += 1
-    if creados:
+    if result['created'] or result['updated']:
         db.session.commit()
-    return creados
+    return result
 
 
 def seed_sales_from_excel():
-    stats = {}
-    if Venta.query.first() is not None:
-        return stats
+    result = {'created': 0, 'updated': 0}
     if not os.path.exists(VENTAS_XLSX):
-        return stats
+        return result
     try:
         import pandas as pd
     except ImportError as exc:
         logger.error(f"Pandas no disponible para cargar ventas: {exc}")
-        return stats
+        return result
     df = pd.read_excel(VENTAS_XLSX)
     if df.empty:
-        return stats
-    creadas = 0
+        return result
+    next_id = (db.session.query(db.func.max(Venta.id_venta)).scalar() or 0) + 1
     for _, row in df.iterrows():
         id_venta = _safe_int(row.get('ID_Venta'))
         fecha = _parse_date(row.get('Fecha')) or date.today()
@@ -139,37 +149,53 @@ def seed_sales_from_excel():
         terminal = _clean_string(row.get('ID_Terminal'), 'TODAS') or 'TODAS'
         if not producto_nombre or not cantidad:
             continue
-        venta = Venta(
-            id_venta=id_venta or (creadas + 1),
-            fecha=fecha,
-            hora=hora,
-            id_cliente=id_cliente or f"CLIENTE-{terminal}-{(creadas + 1):04d}",
-            producto_nombre=producto_nombre,
-            cantidad=cantidad,
-            precio_unitario=precio_unitario,
-            total_venta=total_venta,
-            vendedor=vendedor,
-            id_terminal=terminal
-        )
-        db.session.add(venta)
-        _track_terminal_stats(stats, terminal, venta.id_venta, venta.id_cliente)
-        creadas += 1
-    if creadas:
+        venta = None
+        if id_venta is not None:
+            venta = Venta.query.filter_by(id_venta=id_venta, id_terminal=terminal).first()
+        if venta:
+            venta.fecha = fecha
+            venta.hora = hora
+            venta.id_cliente = id_cliente or venta.id_cliente
+            venta.producto_nombre = producto_nombre
+            venta.cantidad = cantidad
+            venta.precio_unitario = precio_unitario
+            venta.total_venta = total_venta
+            venta.vendedor = vendedor
+            result['updated'] += 1
+        else:
+            assigned_id = id_venta or next_id
+            if id_venta is None:
+                next_id += 1
+            venta = Venta(
+                id_venta=assigned_id,
+                fecha=fecha,
+                hora=hora,
+                id_cliente=id_cliente or f"CLIENTE-{terminal}-{assigned_id:04d}",
+                producto_nombre=producto_nombre,
+                cantidad=cantidad,
+                precio_unitario=precio_unitario,
+                total_venta=total_venta,
+                vendedor=vendedor,
+                id_terminal=terminal
+            )
+            db.session.add(venta)
+            result['created'] += 1
+    if result['created'] or result['updated']:
         db.session.commit()
-    return stats
+    return result
 
 
-def ensure_contadores(stats):
+def refresh_contadores():
     terminales = ['POS1', 'POS2', 'POS3', 'TODAS']
     for terminal in terminales:
         contador = Contador.query.filter_by(terminal=terminal).first()
         if not contador:
             contador = Contador(terminal=terminal)
             db.session.add(contador)
-        data = stats.get(terminal, {})
-        contador.ultimo_cliente = data.get('ultimo_cliente', contador.ultimo_cliente)
-        contador.ultima_venta = data.get('ultima_venta', contador.ultima_venta)
-        contador.total_ventas = data.get('total', contador.total_ventas)
+        query = Venta.query if terminal == 'TODAS' else Venta.query.filter_by(id_terminal=terminal)
+        contador.total_ventas = query.count()
+        contador.ultima_venta = query.with_entities(db.func.max(Venta.id_venta)).scalar() or 0
+        contador.ultimo_cliente = _max_cliente_sequence(query.with_entities(Venta.id_cliente).all())
     db.session.commit()
 
 
@@ -258,14 +284,12 @@ def _extract_cliente_sequence(value):
     return int(match.group(1)) if match else 0
 
 
-def _track_terminal_stats(stats, terminal, id_venta, id_cliente):
-    for key in {terminal, 'TODAS'}:
-        bucket = stats.setdefault(key, {'ultimo_cliente': 0, 'ultima_venta': 0, 'total': 0})
-        bucket['total'] += 1
-        if id_venta:
-            bucket['ultima_venta'] = max(bucket['ultima_venta'], id_venta)
-        cliente_seq = _extract_cliente_sequence(id_cliente)
-        bucket['ultimo_cliente'] = max(bucket['ultimo_cliente'], cliente_seq)
+def _max_cliente_sequence(rows):
+    max_seq = 0
+    for item in rows:
+        value = item[0] if isinstance(item, (list, tuple)) else item
+        max_seq = max(max_seq, _extract_cliente_sequence(value))
+    return max_seq
 
 def login_required(f):
     @wraps(f)
