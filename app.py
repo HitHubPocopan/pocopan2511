@@ -3,12 +3,17 @@ from datetime import datetime, date, time
 import json
 import os
 import re
+import math
 from urllib.parse import unquote
 from functools import wraps
 import logging
 from dotenv import load_dotenv
 
 load_dotenv()
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+CATALOGO_XLSX = os.path.join(BASE_DIR, 'catalogo.xlsx')
+VENTAS_XLSX = os.path.join(BASE_DIR, 'ventas.xlsx')
 
 from models import db, Producto, Venta, Contador
 
@@ -50,30 +55,217 @@ CONFIG = {
 }
 
 def init_db():
-    """Inicializa la base de datos con datos de ejemplo"""
+    """Inicializa la base con los datos de catálogo y ventas"""
     with app.app_context():
         db.create_all()
-        
-        if Producto.query.first() is None:
-            logger.info("Creando productos de ejemplo...")
-            productos = [
-                Producto(nombre='Cajas Verdes GRANJA ANIMALES DINOS', categoria='Ingenio', subcategoria='Madera Ingenio', precio_venta=25000.0, proveedor='Proveedor A'),
-                Producto(nombre='Pezca Gusanos', categoria='Ingenio', subcategoria='Madera Ingenio', precio_venta=30800.0, proveedor='Proveedor B'),
-                Producto(nombre='Juego de Mesa Clásico', categoria='Juego Meza', subcategoria='Estrategia', precio_venta=15500.0, proveedor='Proveedor C'),
-                Producto(nombre='Rompecabezas 1000 Piezas', categoria='Puzzle', subcategoria='Educativo', precio_venta=12000.0, proveedor='Proveedor D'),
-                Producto(nombre='Muñeco Coleccionable', categoria='Figuras', subcategoria='Acción', precio_venta=8900.0, proveedor='Proveedor E'),
-            ]
-            for p in productos:
-                db.session.add(p)
-            db.session.commit()
-            logger.info(f"✅ {len(productos)} productos creados")
-        
-        for terminal in ['POS1', 'POS2', 'POS3', 'TODAS']:
-            if not Contador.query.filter_by(terminal=terminal).first():
-                contador = Contador(terminal=terminal)
-                db.session.add(contador)
+        catalog_count = seed_catalog_from_excel()
+        ventas_stats = seed_sales_from_excel()
+        ensure_contadores(ventas_stats)
+        if catalog_count:
+            logger.info(f"✅ {catalog_count} productos cargados desde catalogo.xlsx")
+        if ventas_stats.get('TODAS', {}).get('total'):
+            logger.info(f"✅ {ventas_stats['TODAS']['total']} ventas cargadas desde ventas.xlsx")
+
+
+def seed_catalog_from_excel():
+    if Producto.query.first() is not None:
+        return 0
+    if not os.path.exists(CATALOGO_XLSX):
+        logger.warning("catalogo.xlsx no encontrado, omitiendo carga inicial")
+        return 0
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        logger.error(f"Pandas no disponible para cargar catálogo: {exc}")
+        return 0
+    df = pd.read_excel(CATALOGO_XLSX)
+    if df.empty:
+        logger.warning("catalogo.xlsx está vacío")
+        return 0
+    creados = 0
+    nombres_vistos = set()
+    for _, row in df.iterrows():
+        nombre = _clean_string(row.get('Nombre'))
+        if not nombre or nombre in nombres_vistos:
+            continue
+        precio_col = 'Precio Venta' if 'Precio Venta' in row.index else 'Precio_Venta'
+        precio = _safe_float(row.get(precio_col))
+        if not precio:
+            continue
+        categoria = _clean_string(row.get('Categoria'), 'Sin Categoría')
+        subcategoria = _clean_string(row.get('SubCAT'))
+        proveedor = 'Catálogo'
+        producto = Producto(
+            nombre=nombre,
+            categoria=categoria or 'Sin Categoría',
+            subcategoria=subcategoria,
+            precio_venta=precio,
+            proveedor=proveedor,
+            estado='Disponible'
+        )
+        db.session.add(producto)
+        nombres_vistos.add(nombre)
+        creados += 1
+    if creados:
         db.session.commit()
-        logger.info("✅ Contadores inicializados")
+    return creados
+
+
+def seed_sales_from_excel():
+    stats = {}
+    if Venta.query.first() is not None:
+        return stats
+    if not os.path.exists(VENTAS_XLSX):
+        return stats
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        logger.error(f"Pandas no disponible para cargar ventas: {exc}")
+        return stats
+    df = pd.read_excel(VENTAS_XLSX)
+    if df.empty:
+        return stats
+    creadas = 0
+    for _, row in df.iterrows():
+        id_venta = _safe_int(row.get('ID_Venta'))
+        fecha = _parse_date(row.get('Fecha')) or date.today()
+        hora = _parse_time(row.get('Hora'))
+        id_cliente = _clean_string(row.get('ID_Cliente'))
+        producto_nombre = _clean_string(row.get('Producto'))
+        cantidad = _safe_int(row.get('Cantidad')) or 0
+        precio_unitario = _safe_float(row.get('Precio_Unitario')) or 0
+        total_venta = _safe_float(row.get('Total_Venta')) or (cantidad * precio_unitario)
+        vendedor = _clean_string(row.get('Vendedor'), 'POS')
+        terminal = _clean_string(row.get('ID_Terminal'), 'TODAS') or 'TODAS'
+        if not producto_nombre or not cantidad:
+            continue
+        venta = Venta(
+            id_venta=id_venta or (creadas + 1),
+            fecha=fecha,
+            hora=hora,
+            id_cliente=id_cliente or f"CLIENTE-{terminal}-{(creadas + 1):04d}",
+            producto_nombre=producto_nombre,
+            cantidad=cantidad,
+            precio_unitario=precio_unitario,
+            total_venta=total_venta,
+            vendedor=vendedor,
+            id_terminal=terminal
+        )
+        db.session.add(venta)
+        _track_terminal_stats(stats, terminal, venta.id_venta, venta.id_cliente)
+        creadas += 1
+    if creadas:
+        db.session.commit()
+    return stats
+
+
+def ensure_contadores(stats):
+    terminales = ['POS1', 'POS2', 'POS3', 'TODAS']
+    for terminal in terminales:
+        contador = Contador.query.filter_by(terminal=terminal).first()
+        if not contador:
+            contador = Contador(terminal=terminal)
+            db.session.add(contador)
+        data = stats.get(terminal, {})
+        contador.ultimo_cliente = data.get('ultimo_cliente', contador.ultimo_cliente)
+        contador.ultima_venta = data.get('ultima_venta', contador.ultima_venta)
+        contador.total_ventas = data.get('total', contador.total_ventas)
+    db.session.commit()
+
+
+def _clean_string(value, default=''):
+    if value is None:
+        return default
+    if isinstance(value, str):
+        cleaned = re.sub(r'\s+', ' ', value).strip()
+        return cleaned if cleaned else default
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and math.isnan(value):
+            return default
+        return str(value).strip()
+    return default
+
+
+def _safe_float(value):
+    if value is None:
+        return None
+    if isinstance(value, str):
+        cleaned = value.replace('$', '').replace(',', '.').strip()
+        cleaned = cleaned.replace(' ', '')
+        if not cleaned:
+            return None
+        value = cleaned
+    try:
+        result = float(value)
+        if math.isnan(result):
+            return None
+        return result
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(value):
+    if value is None:
+        return None
+    try:
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return None
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_date(value):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+    return None
+
+
+def _parse_time(value):
+    if isinstance(value, time):
+        return value
+    if isinstance(value, datetime):
+        return value.time()
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+        for fmt in ('%H:%M:%S', '%H:%M'):
+            try:
+                return datetime.strptime(value, fmt).time()
+            except ValueError:
+                continue
+    return None
+
+
+def _extract_cliente_sequence(value):
+    if not value:
+        return 0
+    match = re.search(r'(\d+)$', value)
+    return int(match.group(1)) if match else 0
+
+
+def _track_terminal_stats(stats, terminal, id_venta, id_cliente):
+    for key in {terminal, 'TODAS'}:
+        bucket = stats.setdefault(key, {'ultimo_cliente': 0, 'ultima_venta': 0, 'total': 0})
+        bucket['total'] += 1
+        if id_venta:
+            bucket['ultima_venta'] = max(bucket['ultima_venta'], id_venta)
+        cliente_seq = _extract_cliente_sequence(id_cliente)
+        bucket['ultimo_cliente'] = max(bucket['ultimo_cliente'], cliente_seq)
 
 def login_required(f):
     @wraps(f)
