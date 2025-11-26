@@ -7,6 +7,7 @@ import math
 from urllib.parse import unquote
 from functools import wraps
 import logging
+from collections import Counter
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -357,6 +358,25 @@ def get_carrito():
         session[f'carrito_{usuario}'] = []
     return session[f'carrito_{usuario}']
 
+def calculate_totals(carrito):
+    carrito = carrito or []
+    subtotal = 0
+    for item in carrito:
+        if not isinstance(item, dict):
+            continue
+        if item.get('subtotal') is not None:
+            subtotal += item.get('subtotal', 0)
+        else:
+            subtotal += (item.get('precio', 0) or 0) * (item.get('cantidad', 0) or 0)
+    iva = subtotal * (CONFIG['iva'] / 100)
+    total = subtotal + iva
+    return {
+        'subtotal': round(subtotal, 2),
+        'iva': round(iva, 2),
+        'total': round(total, 2),
+        'porcentaje_iva': CONFIG['iva']
+    }
+
 @app.route('/punto-venta')
 @login_required
 def punto_venta():
@@ -365,19 +385,7 @@ def punto_venta():
     terminal = session.get('terminal')
     
     carrito_actual = get_carrito()
-    subtotal = sum(
-        (item.get('subtotal') if isinstance(item, dict) else 0)
-        or (item.get('precio', 0) * item.get('cantidad', 0))
-        for item in carrito_actual
-    )
-    iva = subtotal * (CONFIG['iva'] / 100)
-    total = subtotal + iva
-    totales = {
-        'subtotal': round(subtotal, 2),
-        'iva': round(iva, 2),
-        'total': round(total, 2),
-        'porcentaje_iva': CONFIG['iva']
-    }
+    totales = calculate_totals(carrito_actual)
     
     contador = Contador.query.filter_by(terminal=terminal).first()
     id_cliente_proximo = (contador.ultimo_cliente + 1) if contador else 1
@@ -690,24 +698,54 @@ def agregar_carrito():
         carrito.append(item)
         session[f'carrito_{session.get("usuario")}'] = carrito
         
-        subtotal = sum(i['subtotal'] for i in carrito)
-        iva = subtotal * 0.21
-        total = subtotal + iva
+        totales = calculate_totals(carrito)
         
         return jsonify({
             'success': True,
             'message': f'{producto.nombre} agregado al carrito',
             'carrito': carrito,
-            'totales': {
-                'subtotal': round(subtotal, 2),
-                'iva': round(iva, 2),
-                'total': round(total, 2),
-                'porcentaje_iva': 21
-            }
+            'totales': totales
         })
         
     except Exception as e:
         logger.error(f"Error en agregar-carrito: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@app.route('/eliminar-carrito/<int:index>', methods=['DELETE'])
+@login_required
+def eliminar_carrito(index):
+    try:
+        carrito = get_carrito()
+        if index < 0 or index >= len(carrito):
+            return jsonify({'success': False, 'message': 'Ítem no encontrado en el carrito'}), 404
+        item_eliminado = carrito.pop(index)
+        session[f'carrito_{session.get('""usuario""')}] = carrito
+        totales = calculate_totals(carrito)
+        return jsonify({
+            'success': True,
+            'message': f"{item_eliminado.get('producto', 'Producto')} eliminado del carrito",
+            'carrito': carrito,
+            'totales': totales
+        })
+    except Exception as e:
+        logger.error(f"Error en eliminar-carrito: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@app.route('/limpiar-carrito', methods=['DELETE'])
+@login_required
+def limpiar_carrito():
+    try:
+        usuario = session.get('usuario')
+        session[f'carrito_{usuario}'] = []
+        totales = calculate_totals([])
+        return jsonify({
+            'success': True,
+            'message': 'Carrito limpiado correctamente',
+            'carrito': [],
+            'totales': totales
+        })
+    except Exception as e:
+        logger.error(f"Error en limpiar-carrito: {str(e)}")
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 @app.route('/finalizar-venta', methods=['POST'])
